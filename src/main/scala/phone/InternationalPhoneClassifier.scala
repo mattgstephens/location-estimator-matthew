@@ -4,7 +4,12 @@ import parser.GenericParseCSVInternational
 
 object InternationalPhoneClassifier extends App {
 
-  def getRecommendation(phone_number: String): Option[String] = {
+  /*
+  Checks the basic CSV for the country. This will only work when
+  the country code is given! Need to find patterns when the +country_code
+  is not given.
+   */
+  def getRecommendationBasicCSV(phone_number: String): Option[String] = {
 
     val phone_country_list: List[String] =
       GenericParseCSVInternational.parseCSVInternational(
@@ -22,7 +27,7 @@ object InternationalPhoneClassifier extends App {
     }
 
     if (does_number_have_country_code) {
-      val user_phone: String = phone_number.replace("+", "")
+      val user_phone: String = phone_number.replace("+", "").replace("-", "")
 
       val search_phone1 = user_phone
       phone_map.get(search_phone1) match {
@@ -65,28 +70,39 @@ object InternationalPhoneClassifier extends App {
   }
 
   System.out.println(
-    "Guessed country (edge case --> 1 number CC) : " + getRecommendation(
+    "Guessed country (edge case --> 1 number CC) : " + getRecommendationBasicCSV(
       "+14017431661"
     )
   )
   System.out.println("-------------------------------")
   System.out.println(
-    "Guessed country (edge case --> 2 numbers CC) : " + getRecommendation(
+    "Guessed country (edge case --> 2 numbers CC) : " + getRecommendationBasicCSV(
       "+273712439594"
     )
   )
   System.out.println("-------------------------------")
   System.out.println(
-    "Guessed country (edge case --> 3 numbers CC) : " + getRecommendation(
+    "Guessed country (edge case --> 3 numbers CC) : " + getRecommendationBasicCSV(
       "+263712439594"
     )
   )
   System.out.println("-------------------------------")
   System.out.println(
-    "Guessed country (edge case --> 4 numbers CC) : " + getRecommendation(
+    "Guessed country (edge case --> 4 numbers CC) : " + getRecommendationBasicCSV(
       "+168413413413"
     )
   )
   System.out.println("-------------------------------")
+  System.out.println(
+    "Guessed country (edge case --> Same country for different country code) : " + getRecommendationBasicCSV(
+      "+1-93993489238"
+    )
+  )
+  System.out.println("-------------------------------")
+  System.out.println(
+    "Guessed country (edge case --> No country code (No plus sign)) : " + getRecommendationBasicCSV(
+      "071274365235"
+    )
+  )
 
 }

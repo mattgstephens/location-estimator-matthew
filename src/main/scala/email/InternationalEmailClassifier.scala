@@ -4,12 +4,12 @@ import parser.GenericParseCSVInternational
 
 object InternationalEmailClassifier extends App {
 
+  val DOMAIN_MAP_BASIC = getDomainMapBasic
+  val DOMAIN_MAP_HL = getDomainMapHL
+
   // Recommendations off Basic CSV
   // ***---------------------------------------------------------***
-  def getCountryRecommendationBasicDomains(email: String): Option[String] = {
-    // Change to correct file path!
-    // Will probably have to move the next two lines into the generic parser, and take in the list
-    // of country phone numbers as a second argument to getRecommendation!
+  def getDomainMapBasic: Map[String, String] = {
     val country_list: List[String] =
       GenericParseCSVInternational.parseCSVInternational(
         "src/main/resources/email_domains.csv"
@@ -18,20 +18,33 @@ object InternationalEmailClassifier extends App {
       .map(countryPair => countryPair.split(","))
       .map(splitPair => (splitPair(0), splitPair(1)))
       .toMap
-    // Get the domain after the last full stop to make it searchable.
+    domain_map
+  }
+
+  def getBasicDomainCountry(email: String): Option[String] = {
     val user_domain: String = email.substring(email.lastIndexOf("."))
-    val result = domain_map.get(user_domain)
     // The below code is to search through the other CSV when the country is not found in the basic one!
-//    domain_map.get(user_domain) match {
-//      case Some(result) => result
-//      case None => getDomainType(email)
-//    }
-    result
+    DOMAIN_MAP_BASIC.get(user_domain) match {
+      case Some(result) => Some(result)
+      case None         => Some(getHLDomainType(email))
+    }
+  }
+
+  // TODO:
+  // Need to fix this check --> will continue the workflow if and only if this check passes (i.e. if
+  // you have a domain that is a country-code and not one that is generic.
+  def identifiableDomain(email: String): Boolean = {
+    getBasicDomainCountry(email) match {
+      case Some(country) =>
+        System.out.println("Country in identify: " + country)
+        if (!country.equals("generic")) true
+        else false
+    }
   }
 
   // Recommendations off Higher Level CSV
   // ***---------------------------------------------------------***
-  def getDomainInformation: Map[String, (String, String)] = {
+  def getDomainMapHL: Map[String, (String, String)] = {
     val domain_information_list: List[String] =
       GenericParseCSVInternational.parseCSVInternational(
         "src/main/resources/trusted-email-domains.csv"
@@ -43,61 +56,102 @@ object InternationalEmailClassifier extends App {
     domain_map
   }
 
-  def getDomainType(email: String): String = {
+  def getHLDomainType(email: String): String = {
     val user_domain = email.substring(email.lastIndexOf("."))
     val domain_type: String =
-      getDomainInformation.get(user_domain).map(Tuple => Tuple._1).toString
+      DOMAIN_MAP_HL.get(user_domain).map(Tuple => Tuple._1).toString
     domain_type
   }
 
-  def getTLDType(email: String): String = {
+  def getHLDomainTLD(email: String): String = {
     val user_domain = email.substring(email.lastIndexOf("."))
     val domain_TLD: String =
-      getDomainInformation.get(user_domain).map(Tuple => Tuple._2).toString
+      DOMAIN_MAP_HL.get(user_domain).map(Tuple => Tuple._2).toString
     domain_TLD
   }
 
   System.out.println(
-    getCountryRecommendationBasicDomains("matthew@brown.co.uk")
+    "---------------Now Printing the Basic CSV Functions----------------"
+  )
+
+  System.out.println(
+    "---------------Get Domain----------------"
+  )
+
+  System.out.println(
+    getBasicDomainCountry("matthew@brown.co.uk")
   )
   System.out.println("-------------------------------")
   System.out.println(
-    getCountryRecommendationBasicDomains("matthew_stephens@brown.co.zw")
+    getBasicDomainCountry("matthew_stephens@brown.co.zw")
   )
   System.out.println("-------------------------------")
   System.out.println(
-    getCountryRecommendationBasicDomains("matthew@brown.co.za")
+    getBasicDomainCountry("matthew@brown.co.za")
   )
   System.out.println("-------------------------------")
   System.out.println(
-    getCountryRecommendationBasicDomains("matthew@brown.co.fr")
+    getBasicDomainCountry("matthew@brown.co.fr")
   )
   System.out.println("-------------------------------")
   System.out.println(
-    getCountryRecommendationBasicDomains("matthew@brown.co.gr")
+    getBasicDomainCountry("matthew@brown.co.gr")
   )
   System.out.println("-------------------------------")
   System.out.println(
-    getCountryRecommendationBasicDomains("matthew@brown.co.hk")
+    getBasicDomainCountry("matthew@brown.co.hk")
   )
   System.out.println("-------------------------------")
   System.out.println(
     "Spicy one: " +
-      getCountryRecommendationBasicDomains("matthew@brown.co.telefonica")
+      getBasicDomainCountry("matthew@brown.co.telefonica")
   )
 
   System.out.println(
-    "---------------Now Printing the New Functions----------------"
+    "---------------Identify----------------"
   )
 
-  System.out.println("Domain type: " + getDomainType("matthew@brown.co.za"))
-  System.out.println("TLD for domain: " + getTLDType("matthew@brown.co.za"))
-  System.out.println("Domain type: " + getDomainType("matthew@brown.co.zw"))
-  System.out.println("TLD for domain: " + getTLDType("matthew@brown.co.zw"))
-  System.out.println("Domain type: " + getDomainType("matthew@brown.co.td"))
-  System.out.println("TLD for domain: " + getTLDType("matthew@brown.co.td"))
   System.out.println(
-    "Domain type: " + getDomainType("matthew@brown.co.telefonica")
+    identifiableDomain("matthew@brown.co.uk")
+  )
+  System.out.println("-------------------------------")
+  System.out.println(
+    identifiableDomain("matthew_stephens@brown.co.zw")
+  )
+  System.out.println("-------------------------------")
+  System.out.println(
+    identifiableDomain("matthew@brown.co.za")
+  )
+  System.out.println("-------------------------------")
+  System.out.println(
+    identifiableDomain("matthew@brown.co.fr")
+  )
+  System.out.println("-------------------------------")
+  System.out.println(
+    identifiableDomain("matthew@brown.co.gr")
+  )
+  System.out.println("-------------------------------")
+  System.out.println(
+    identifiableDomain("matthew@brown.co.hk")
+  )
+  System.out.println("-------------------------------")
+  System.out.println(
+    "Spicy one: " +
+      identifiableDomain("matthew@brown.co.telefonica")
+  )
+
+  System.out.println(
+    "---------------Now Printing the HL Functions----------------"
+  )
+
+  System.out.println("Domain type: " + getHLDomainType("matthew@brown.co.za"))
+  System.out.println("TLD for domain: " + getHLDomainTLD("matthew@brown.co.za"))
+  System.out.println("Domain type: " + getHLDomainType("matthew@brown.co.zw"))
+  System.out.println("TLD for domain: " + getHLDomainTLD("matthew@brown.co.zw"))
+  System.out.println("Domain type: " + getHLDomainType("matthew@brown.co.td"))
+  System.out.println("TLD for domain: " + getHLDomainTLD("matthew@brown.co.td"))
+  System.out.println(
+    "Domain type: " + getHLDomainType("matthew@brown.co.telefonica")
   )
 
 }

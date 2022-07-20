@@ -14,29 +14,32 @@ object InternationalEmailClassifier extends App {
   // Process Basic CSV
   // ***---------------------------------------------------------***
   def getDomainMapBasic: Map[String, String] = {
-    val country_list: List[String] =
-      GenericParseCSVInternational.parseCSVInternational(
+    GenericParseCSVInternational
+      .parseCSVInternational(
         "src/main/resources/basic_email_domains.csv"
       )
-    val domain_map = country_list
       .map(countryPair => countryPair.split(","))
-      .map(splitPair => (splitPair(0), splitPair(1)))
+      .map(splitPair =>
+        (Seq(splitPair).lift(0).toString, Seq(splitPair).lift(1).toString)
+      )
       .toMap
-    domain_map
   }
 
   // Process Trusted CSV
   // ***---------------------------------------------------------***
   def getDomainMapHL: Map[String, (String, String)] = {
-    val domain_information_list: List[String] =
-      GenericParseCSVInternational.parseCSVInternational(
+    GenericParseCSVInternational
+      .parseCSVInternational(
         "src/main/resources/HL_email_domains.csv"
       )
-    val domain_map = domain_information_list
       .map(entry => entry.split(","))
-      .map(splitPair => (splitPair(0), (splitPair(1), splitPair(2))))
+      .map(splitTriple =>
+        (
+          Seq(splitTriple).lift(0).toString,
+          (Seq(splitTriple).lift(1).toString, Seq(splitTriple).lift(2).toString)
+        )
+      )
       .toMap
-    domain_map
   }
 
   // ***---------------------------------------------------------***
@@ -59,7 +62,9 @@ object InternationalEmailClassifier extends App {
           // Add logic here to sort through the TLD domains!
           System.out.println("Made it here!!!")
           // TODO: This needs to return an Option[String]
+          // GENERATE NGRAMS
           val nGramTLD = generateNGrams(getHLDomainTLD(email), 4)
+          // COMPARE THE NGRAMS TO THE TRUSTED EMAIL DOMAIN
           analyze_HLDomainTLD(nGramTLD)
         } else Some(country)
       case None => None
@@ -73,7 +78,7 @@ object InternationalEmailClassifier extends App {
     val words: Array[String] = TLD.split("\\s+")
     val ngrams = (for (i <- 1 to n)
       yield words.sliding(i).map(group => group.toList)).flatten
-    System.out.println("Look at these lovely ngrams" + ngrams)
+    System.out.println("Look at these lovely ngrams " + ngrams)
     ngrams
   }
 
@@ -100,8 +105,11 @@ object InternationalEmailClassifier extends App {
   }
 
   def getDomain(email: String): Option[String] = {
-    val user_domain: String = email.substring(email.lastIndexOf("."))
     // The below code is to search through the other CSV when the country is not found in the basic one!
+    val user_domain: String = email.substring(email.lastIndexOf("."))
+    // You have to check that there is a domain type to see if the
+    // domain is even in the other CSV file! If not, then there is no
+    // point in even checking through the domain TLD for the various ngrams.
     DOMAIN_MAP_BASIC.get(user_domain) match {
       case Some(result) => Some(result)
       case None         => Some(getHLDomainType(email))
@@ -129,90 +137,114 @@ object InternationalEmailClassifier extends App {
     domain_TLD
   }
 
-//  System.out.println(
-//    "---------------Identify----------------"
-//  )
-//
-//  System.out.println(
-//    identifyCountryFromDomain("matthew@brown.co.uk")
-//  )
-//  System.out.println("-------------------------------")
-//  System.out.println(
-//    identifyCountryFromDomain("matthew_stephens@brown.co.zw")
-//  )
-//  System.out.println("-------------------------------")
-//  System.out.println(
-//    identifyCountryFromDomain("matthew@brown.co.za")
-//  )
-//  System.out.println("-------------------------------")
-//  System.out.println(
-//    identifyCountryFromDomain("matthew@brown.co.fr")
-//  )
-//  System.out.println("-------------------------------")
-//  System.out.println(
-//    identifyCountryFromDomain("matthew@brown.co.gr")
-//  )
-//  System.out.println("-------------------------------")
-//  System.out.println(
-//    identifyCountryFromDomain("matthew@brown.co.hk")
-//  )
-//  System.out.println("-------------------------------")
-//  System.out.println(
-//    "Spicy one: " +
-//      identifyCountryFromDomain("matthew@brown.co.telefonica")
-//  )
-//
-//  System.out.println(
-//    "---------------getDomain----------------"
-//  )
-//
-//  System.out.println(
-//    getDomain("matthew@brown.co.uk")
-//  )
-//  System.out.println("-------------------------------")
-//  System.out.println(
-//    getDomain("matthew_stephens@brown.co.zw")
-//  )
-//  System.out.println("-------------------------------")
-//  System.out.println(
-//    getDomain("matthew@brown.co.za")
-//  )
-//  System.out.println("-------------------------------")
-//  System.out.println(
-//    getDomain("matthew@brown.co.fr")
-//  )
-//  System.out.println("-------------------------------")
-//  System.out.println(
-//    getDomain("matthew@brown.co.gr")
-//  )
-//  System.out.println("-------------------------------")
-//  System.out.println(
-//    getDomain("matthew@brown.co.hk")
-//  )
-//  System.out.println("-------------------------------")
-//  System.out.println(
-//    "Spicy one: " +
-//      getDomain("matthew@brown.co.telefonica")
-//  )
-//
-//  System.out.println(
-//    "---------------Get Domain Type and TLD----------------"
-//  )
-//
-//  System.out.println("Domain type: " + getHLDomainType("matthew@brown.co.za"))
-//  System.out.println("TLD for domain: " + getHLDomainTLD("matthew@brown.co.za"))
-//  System.out.println("Domain type: " + getHLDomainType("matthew@brown.co.zw"))
-//  System.out.println("TLD for domain: " + getHLDomainTLD("matthew@brown.co.zw"))
-//  System.out.println("Domain type: " + getHLDomainType("matthew@brown.co.td"))
-//  System.out.println("TLD for domain: " + getHLDomainTLD("matthew@brown.co.td"))
-//  System.out.println(
-//    "Domain type: " + getHLDomainType("matthew@brown.co.telefonica")
-//  )
+  System.out.println(
+    "---------------TESTING Identify----------------"
+  )
+
+  System.out.println(
+    identifyCountryFromDomain("matthew@brown.co.uk")
+  )
+  System.out.println("-------------------------------")
+  System.out.println(
+    identifyCountryFromDomain("matthew_stephens@brown.co.zw")
+  )
+  System.out.println("-------------------------------")
+  System.out.println(
+    identifyCountryFromDomain("matthew@brown.co.za")
+  )
+  System.out.println("-------------------------------")
+  System.out.println(
+    identifyCountryFromDomain("matthew@brown.co.fr")
+  )
+  System.out.println("-------------------------------")
+  System.out.println(
+    identifyCountryFromDomain("matthew@brown.co.gr")
+  )
+  System.out.println("-------------------------------")
+  System.out.println(
+    identifyCountryFromDomain("matthew@brown.co.hk")
+  )
+  System.out.println("-------------------------------")
+  System.out.println(
+    "Spicy one: " +
+      identifyCountryFromDomain("matthew@brown.co.telefonica")
+  )
+
+  System.out.println(
+    "---------------TESTING getDomain----------------"
+  )
+
+  System.out.println(
+    getDomain("matthew@brown.co.uk")
+  )
+  System.out.println("-------------------------------")
+  System.out.println(
+    getDomain("matthew_stephens@brown.co.zw")
+  )
+  System.out.println("-------------------------------")
+  System.out.println(
+    getDomain("matthew@brown.co.za")
+  )
+  System.out.println("-------------------------------")
+  System.out.println(
+    getDomain("matthew@brown.co.fr")
+  )
+  System.out.println("-------------------------------")
+  System.out.println(
+    getDomain("matthew@brown.co.gr")
+  )
+  System.out.println("-------------------------------")
+  System.out.println(
+    getDomain("matthew@brown.co.hk")
+  )
+  System.out.println("-------------------------------")
+  System.out.println(
+    "Spicy one: " +
+      getDomain("matthew@brown.co.telefonica")
+  )
+
+  System.out.println(
+    "---------------TESTING Get Domain Type and TLD----------------"
+  )
+
+  System.out.println("Domain type: " + getHLDomainType("matthew@brown.co.za"))
+  System.out.println("TLD for domain: " + getHLDomainTLD("matthew@brown.co.za"))
+  System.out.println("Domain type: " + getHLDomainType("matthew@brown.co.zw"))
+  System.out.println("TLD for domain: " + getHLDomainTLD("matthew@brown.co.zw"))
+  System.out.println("Domain type: " + getHLDomainType("matthew@brown.co.td"))
+  System.out.println("TLD for domain: " + getHLDomainTLD("matthew@brown.co.td"))
+  System.out.println(
+    "Domain type: " + getHLDomainType("matthew@brown.co.telefonica")
+  )
+
+  System.out.println(
+    "---------------TESTING ngram algorithm----------------"
+  )
 
   System.out.println(
     "Testing the n-gram algorithm now: " + identifyCountryFromDomain(
-      "matthew@brown.in"
+      "matthew@brown.台湾"
     )
+  )
+
+  System.out.println(
+    "Testing the n-gram algorithm now: " + identifyCountryFromDomain(
+      "matthew@brown.台湾"
+    )
+  )
+
+  System.out.println(
+    "Testing the n-gram algorithm now: " + identifyCountryFromDomain(
+      "matthew@brown.star"
+    )
+  )
+
+  System.out.println(
+    "NGRAM TEST RESULT 4 steps: " + generateNGrams("This is an ngram test", 4)
+  )
+
+  System.out.println(
+    "NGRAM TEST RESULT 5 steps: " + generateNGrams("This is an ngram test", 5)
   )
 
 }

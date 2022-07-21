@@ -248,3 +248,22 @@ object InternationalEmailClassifier extends App {
   )
 
 }
+
+object PlayPlayGround extends App {
+
+  val aEmailWithoutFullStop = "matt@gmailcozw"
+  val aEmailWithFullStop = "matt@gmail.co.zw"
+
+  def checkForFullStop(email: String): Boolean = {
+    if (email.contains(".")) true
+    else false
+  }
+
+  System.out.println(
+    "Test without full stop: " + checkForFullStop(aEmailWithoutFullStop)
+  )
+  System.out.println(
+    "Test with full stop: " + checkForFullStop(aEmailWithFullStop)
+  )
+
+}
